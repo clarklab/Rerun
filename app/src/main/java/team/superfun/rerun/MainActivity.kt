@@ -140,6 +140,7 @@ class MainActivity : Activity() {
         player = exo
         playerView.player = exo
         message.visibility = View.GONE
+        playerView.visibility = View.VISIBLE
         stage.setBackgroundColor(0xFF000000.toInt())
         onClipStarted()
     }
