@@ -65,7 +65,7 @@ for raw in "${lines[@]}"; do
     # shellcheck disable=SC2086
     if ! yt-dlp ${YTDLP_ARGS:-} --no-playlist --no-warnings --quiet --progress \
       -f "bv*[height<=480]+ba/b[height<=480]/wv*+ba/w" -S "res:480" \
-      --merge-output-format mkv "${section[@]}" \
+      --merge-output-format mkv ${section[@]+"${section[@]}"} \
       -o "$DL/$stored.%(ext)s" "$url"; then
       failed+=("$url"); continue
     fi

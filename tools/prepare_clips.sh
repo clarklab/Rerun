@@ -90,7 +90,7 @@ for src in "${files[@]}"; do
   bars=""
   [[ "$AUTOCROP" == 1 ]] && bars="$(detect_bars "$src")"
   [[ -n "$bars" ]] && echo "       trimming black bars (${bars%,})"
-  ffmpeg -nostdin -hide_banner -loglevel error -y -i "$src" "${limit[@]}" \
+  ffmpeg -nostdin -hide_banner -loglevel error -y -i "$src" ${limit[@]+"${limit[@]}"} \
     -map 0:v:0 -map 0:a:0? -sn -dn \
     -vf "$bars$VF" \
     -c:v libx264 -profile:v main -level 3.1 -preset slow -crf 24 -maxrate 1500k -bufsize 3000k \
