@@ -14,11 +14,13 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 
@@ -42,12 +44,15 @@ class MainActivity : Activity() {
     private var shuffle: ShuffleBag? = null
     private var player: ExoPlayer? = null
     private var framing = Framing.FULL
+    private val vhs = VhsEffect()
+    private var tracking = 0
 
     private val handler = Handler(Looper.getMainLooper())
     private var badgeText = ""
     private var badgeUntil = 0L
     private var infoUntil = 0L
     private var exitArmedUntil = 0L
+    private var runtimeRetries = 0
 
     private val tick = object : Runnable {
         override fun run() {
@@ -76,7 +81,10 @@ class MainActivity : Activity() {
             tv.includeFontPadding = false
         }
 
-        framing = Framing.entries.getOrElse(getPreferences(MODE_PRIVATE).getInt(PREF_FRAMING, 0)) { Framing.FULL }
+        val prefs = getPreferences(MODE_PRIVATE)
+        framing = Framing.entries.getOrElse(prefs.getInt(PREF_FRAMING, 0)) { Framing.FULL }
+        tracking = prefs.getInt(PREF_TRACKING, 0).coerceIn(0, Config.TRACKING_STEPS)
+        vhs.amount = tracking.toFloat() / Config.TRACKING_STEPS
         root.addOnLayoutChangeListener { _, l, t, r, b, ol, ot, or, ob ->
             if (r - l != or - ol || b - t != ob - ot) root.post { layoutStage() }
         }
@@ -121,9 +129,12 @@ class MainActivity : Activity() {
 
     // ---- Playback ----
 
+    @OptIn(UnstableApi::class)
     private fun startPlayer() {
         val bag = shuffle ?: return
         val exo = ExoPlayer.Builder(this).build().apply {
+            // Always in the pipeline; at tracking 0 the shader passes frames straight through.
+            setVideoEffects(listOf(vhs))
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -153,6 +164,7 @@ class MainActivity : Activity() {
 
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            runtimeRetries = 0
             topUpPlaylist()
             onClipStarted()
         }
@@ -162,6 +174,15 @@ class MainActivity : Activity() {
         override fun onPlayerError(error: PlaybackException) {
             val exo = player ?: return
             val bag = shuffle ?: return
+            // Media3 1.4's effects pipeline can throw a runtime error if a frame has to be dropped. That isn't the
+            // clip's fault, so pick up where it left off rather than marking the clip broken.
+            if (error.errorCode == PlaybackException.ERROR_CODE_UNSPECIFIED && runtimeRetries < 3) {
+                runtimeRetries++
+                Log.w(TAG, "Playback hiccup, resuming", error)
+                exo.prepare()
+                exo.play()
+                return
+            }
             val bad = exo.currentMediaItem?.mediaId?.toIntOrNull()
             Log.e(TAG, "Can't play ${bad?.let { clips[it].assetPath }}, skipping", error)
             if (bad != null) {
@@ -246,12 +267,17 @@ class MainActivity : Activity() {
             KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
                 if (firstPress) back()
             }
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER,
+            // Held keys repeat, so holding Down rolls all the way back to a clean picture.
+            KeyEvent.KEYCODE_DPAD_UP -> adjustTracking(+1)
+            KeyEvent.KEYCODE_DPAD_DOWN -> adjustTracking(-1)
+            // OK pauses on release; holding it changes framing instead (see onKeyLongPress).
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                if (firstPress) event.startTracking()
+            }
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                 if (firstPress) togglePause()
             }
-            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_INFO -> showInfoFor(Config.INFO_ON_KEYPRESS_MS)
-            KeyEvent.KEYCODE_DPAD_DOWN -> if (firstPress) cycleFraming()
+            KeyEvent.KEYCODE_INFO -> showInfoFor(Config.INFO_ON_KEYPRESS_MS)
             KeyEvent.KEYCODE_BACK -> {
                 // Guard against a stray press ending the show: back has to be pressed twice.
                 val now = SystemClock.uptimeMillis()
@@ -263,6 +289,31 @@ class MainActivity : Activity() {
             else -> return super.onKeyDown(keyCode, event)
         }
         return true
+    }
+
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode in OK_KEYS) {
+            cycleFraming()
+            return true
+        }
+        return super.onKeyLongPress(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode in OK_KEYS) {
+            if (event.isTracking && !event.isCanceled) togglePause()
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
+    /** Up/Down turn the tape worse or better, one click at a time; 0 is a clean picture. */
+    private fun adjustTracking(delta: Int) {
+        tracking = (tracking + delta).coerceIn(0, Config.TRACKING_STEPS)
+        vhs.amount = tracking.toFloat() / Config.TRACKING_STEPS
+        getPreferences(MODE_PRIVATE).edit().putInt(PREF_TRACKING, tracking).apply()
+        val bar = "|".repeat(tracking) + "-".repeat(Config.TRACKING_STEPS - tracking)
+        flashBadge(if (tracking == 0) "AUTO TRACKING" else "TRACKING\n$bar", 2_500L)
     }
 
     // ---- On-screen display ----
@@ -344,5 +395,7 @@ class MainActivity : Activity() {
     companion object {
         private const val TAG = "Rerun"
         private const val PREF_FRAMING = "framing"
+        private const val PREF_TRACKING = "tracking"
+        private val OK_KEYS = setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER)
     }
 }

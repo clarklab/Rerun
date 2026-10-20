@@ -4,7 +4,7 @@ Picking this up locally? Here is where things stand. The README has the full doc
 
 ## Status
 - **App:** builds with `./gradlew assembleRelease`. It was tested on an Android TV 11 emulator: shuffle
-  playback from assets, the VCR info card, Right = next, and Down = framing toggle all work.
+  playback from assets, the VCR info card, Right = next, and the framing toggle all work.
   It has not been tried on the onn. stick or the CRT yet.
 - **Clips:** the first 10 are listed in `tools/links.txt`, and their card text is already in
   `app/src/main/assets/clips/clips.csv`. **They haven't been downloaded yet.** YouTube blocks cloud servers, so run
@@ -31,7 +31,7 @@ If YouTube asks you to sign in, run `YTDLP_ARGS="--cookies-from-browser chrome" 
   YouTube thumbnails at 90px of 720), and the full frame is kept in 4:3 with nothing cropped. If any of the
   logo still peeks through, raise the number slightly.
 - **Every other clip** is center-cropped to fill 4:3, and baked-in black bars are trimmed first.
-- **Framing on the CRT:** the default is *Full screen*. If circles look stretched, press **Down** on the
+- **Framing on the CRT:** the default is *Full screen*. If circles look stretched, hold **OK** on the
   remote to switch to *Center 4:3*. The app remembers the choice.
 - **Info card** shows during the first and last 8 seconds of each clip, to avoid burning text into the tube.
   Set `INFO_ALWAYS_ON` in `Config.kt` if you want it up the whole time.

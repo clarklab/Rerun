@@ -10,6 +10,10 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
   The card appears for the first and last 8 seconds of each clip, like MTV, so the text doesn't burn into the tube.
 - Shows a `PLAY ►` badge in the top-left at the start of each clip, and `PAUSE ||` while paused.
 - Can start on its own when the stick powers on (optional, see below).
+- Bad-tape mode for fun: Up on the remote wears the tape down a click at a time, and Down brings it back.
+  Level 1 looks like a decent SP tape. Each click goes softer, smearier and noisier, then tracking bars come in
+  and grow, the picture starts to bounce, and level 10 rolls. It's a live GPU port of
+  [ntsc-rs](https://github.com/valadaptive/ntsc-rs)'s NTSC/VHS signal model (`VhsEffect.kt`), so it works on any clip.
 - Skips a broken clip and moves on. Shows a blue `NO TAPE` screen when there are no clips.
 
 ## Remote
@@ -18,9 +22,9 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
 | --- | --- |
 | **Right** / Next / FF / Ch+ | Next clip |
 | **Left** / Prev / Rew / Ch− | Restart the clip. Press again within 4 s to go to the previous clip |
-| **OK** / Play-Pause | Pause or resume |
-| **Up** | Show the info card |
-| **Down** | Change framing: *Full screen* or *Center 4:3* (remembered between runs) |
+| **OK** / Play-Pause | Pause or resume (also shows the info card) |
+| **Hold OK** | Change framing: *Full screen* or *Center 4:3* (remembered between runs) |
+| **Up** / **Down** | Make the VHS tracking worse / better, in 10 clicks (remembered between runs). Hold **Down** to get a clean picture back (*AUTO TRACKING*) |
 | **Back** ×2 | Exit (one stray press won't stop the show) |
 
 ## Adding clips
@@ -128,7 +132,7 @@ or **Screen saver**.
 
 ## Framing: getting the picture right on the CRT
 
-The app has two framing modes. Press **Down** on the remote to switch between them:
+The app has two framing modes. Hold **OK** on the remote to switch between them:
 
 - **Full screen** (default): the clip fills the whole HDMI output. This is correct when the stick
   outputs a 4:3 or 480p signal, or when your HDMI→AV converter squeezes the full 16:9 frame onto the tube.
@@ -149,6 +153,7 @@ app/src/main/
     MainActivity.kt        player, remote, on-screen display
     ClipLibrary.kt         finds clips, reads clips.csv
     ShuffleBag.kt          no-repeat shuffle
+    VhsEffect.kt           bad-tape effect (Up/Down), a GPU port of ntsc-rs
     BootReceiver.kt        auto-start on power-up
     Config.kt              tweakables
 tools/prepare_clips.sh     converts any video into a CRT-ready clip
@@ -158,3 +163,5 @@ tools/prepare_clips.sh     converts any video into a CRT-ready clip
 
 **VCR OSD Mono** by Riciery Leal (mrmanet), released as 100% free on
 [dafont](https://www.dafont.com/vcr-osd-mono.font). Playback uses [AndroidX Media3](https://developer.android.com/media/media3) ExoPlayer.
+The VHS effect's filters, noise and tracking model are adapted from [ntsc-rs](https://github.com/valadaptive/ntsc-rs)
+by valadaptive (MIT / ISC / Apache-2.0).

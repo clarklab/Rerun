@@ -42,4 +42,7 @@ object Config {
      * 4:3 tube, text looks skinny; set this to ~1.33 to compensate.
      */
     const val TEXT_SCALE_X = 1.0f
+
+    /** Clicks of bad tracking on Up/Down, from a clean picture to a chewed-up tape. */
+    const val TRACKING_STEPS = 10
 }
