@@ -1,0 +1,15 @@
+# One clip per line. Run: tools/fetch_clips.sh
+#   URL   [START-END]   [| File Name]   [| prepare_clips.sh options]
+# Card text (title / director / year + studio) comes from app/src/main/assets/clips/clips.csv.
+
+https://www.youtube.com/watch?v=mRS1WhIUJ7A  0:00-7:00  | Childs Play (1988)
+https://www.youtube.com/watch?v=0TbbBq7mXA8  0:00-5:40  | Friday the 13th Part VI (1986)
+https://www.youtube.com/watch?v=suc1wXC_9s4  0:00-5:01  | Friday the 13th Part VII (1988)
+# 2.37:1 picture letterboxed in 16:9 with a channel logo in the bars: black the bars out, keep the full frame.
+https://www.youtube.com/watch?v=XWPq9Hb81aM             | Freddy vs Jason (2003)            | --letterbox --mask-bars 12.5
+https://www.youtube.com/watch?v=sQbpAZDKARk             | A Nightmare on Elm Street (1984)
+https://www.youtube.com/watch?v=Rr-VODLBOVA             | Carrie (1976) Nightmare
+https://www.youtube.com/watch?v=PxDA-LH6tho  0:00-5:40  | Carrie (1976) Prom
+https://www.youtube.com/watch?v=d-ABIIZV3vA             | The Shining (1980) Heres Johnny
+https://www.youtube.com/watch?v=2rKbtlodzCU             | The Shining (1980) The Shine
+https://www.youtube.com/watch?v=YnzYWsdHEpM             | The Shining (1980) Bar

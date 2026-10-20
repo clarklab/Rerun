@@ -1,0 +1,4 @@
+<resources>
+    <!-- Classic VCR "no signal" blue. -->
+    <color name="vcr_blue">#0018A8</color>
+</resources>
