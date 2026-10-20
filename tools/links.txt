@@ -1,0 +1,8 @@
+# One clip per line. Run: tools/fetch_clips.sh
+#
+#   URL                                   [START-END]   [| Title (Year)]
+#
+# Examples (delete these and paste your own):
+# https://www.youtube.com/watch?v=XXXXXXXXXXX
+# https://youtu.be/XXXXXXXXXXX            1:05-2:30
+# https://youtu.be/XXXXXXXXXXX            0:40-1:55     | Back to the Future (1985)

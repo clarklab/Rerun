@@ -43,6 +43,35 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
    For TV clips, put the episode in the director column and the network in the studio column.
    Empty cells are skipped. A clip with no row gets its title and year from the filename.
 
+### From YouTube links
+
+Paste links into `tools/links.txt`, one per line. You can add a time range to grab
+just a section, and a `| Title (Year)` to name it:
+
+```
+https://youtu.be/XXXXXXXXXXX
+https://youtu.be/XXXXXXXXXXX   1:05-2:30
+https://youtu.be/XXXXXXXXXXX   0:40-1:55   | Back to the Future (1985)
+```
+
+Then run:
+
+```sh
+pip install -U yt-dlp        # or: brew install yt-dlp ffmpeg
+tools/fetch_clips.sh
+```
+
+The script downloads each link at 480p or below (only the section you asked for), then runs it
+through `prepare_clips.sh`. Clips that are already downloaded or converted get skipped, so it's
+safe to add more links and run it again. Originals are kept in `tools/downloads/`.
+
+**Run this on your own computer.** YouTube blocks downloads from most cloud servers. If it ever
+asks you to sign in, run `YTDLP_ARGS="--cookies-from-browser chrome" tools/fetch_clips.sh`.
+
+Both scripts automatically trim black bars baked into a video. That covers a 4:3 TV show
+uploaded with side bars, and a widescreen movie with top and bottom bars. Pass
+`--no-autocrop` to `prepare_clips.sh` to turn this off.
+
 Clips are kept out of git on purpose (`.gitignore`), because GitHub can't store files that large.
 
 ### Size budget

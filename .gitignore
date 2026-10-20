@@ -11,3 +11,5 @@ app/src/main/assets/clips/*.mp4
 app/src/main/assets/clips/*.m4v
 app/src/main/assets/clips/*.mkv
 app/src/main/assets/clips/*.webm
+# yt-dlp downloads (originals before conversion)
+tools/downloads/
