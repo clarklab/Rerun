@@ -68,6 +68,13 @@ safe to add more links and run it again. Originals are kept in `tools/downloads/
 **Run this on your own computer.** YouTube blocks downloads from most cloud servers. If it ever
 asks you to sign in, run `YTDLP_ARGS="--cookies-from-browser chrome" tools/fetch_clips.sh`.
 
+A line can also carry converter options after a second `|`. For example, this one blacks out a
+channel logo sitting in a baked-in letterbox and keeps the whole frame instead of cropping it:
+
+```
+https://youtu.be/XXXXXXXXXXX   | Freddy vs Jason (2003) | --letterbox --mask-bars 12.5
+```
+
 Both scripts automatically trim black bars baked into a video. That covers a 4:3 TV show
 uploaded with side bars, and a widescreen movie with top and bottom bars. Pass
 `--no-autocrop` to `prepare_clips.sh` to turn this off.

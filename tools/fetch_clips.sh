@@ -6,10 +6,12 @@
 #   tools/fetch_clips.sh <url> [<url>...]
 #
 # links.txt, one clip per line ("#" starts a comment):
+#   URL  [START-END]  [| File Name (Year)]  [| prepare_clips.sh options]
 #   https://youtu.be/abc123
-#   https://youtu.be/abc123  1:05-2:30                         # just that section
-#   https://youtu.be/abc123  1:05-2:30 | Back to the Future (1985)   # and name it
-# The name after "|" becomes the clip's title/year in clips.csv; without it the YouTube title is used.
+#   https://youtu.be/abc123  1:05-2:30                                  # just that section
+#   https://youtu.be/abc123  0:00-5:40 | Carrie (1976) Prom             # and name the file
+#   https://youtu.be/abc123            | Freddy vs Jason (2003) | --letterbox --mask-bars 12.5
+# Without a name the YouTube title is used. Card text comes from clips.csv when the file has a row.
 #
 # Run this on your own computer: YouTube blocks most cloud/datacenter IPs.
 # Extra yt-dlp flags can be passed through YTDLP_ARGS, e.g. YTDLP_ARGS="--cookies-from-browser firefox".
@@ -33,12 +35,15 @@ fi
 # Filenames the converter can parse back into "Title (Year)".
 sanitize() { printf '%s' "$1" | tr -c 'A-Za-z0-9()._ -' '_' | sed 's/__*/_/g; s/  */ /g; s/^[ _]*//; s/[ _]*$//' | cut -c1-120; }
 
-fetched=()
+staging="$(mktemp -d)"
+trap 'rm -rf "$staging"' EXIT
+failed=()
+
 for raw in "${lines[@]}"; do
   line="${raw%%#*}"                       # strip comments
-  name=""
-  if [[ "$line" == *"|"* ]]; then name="$(echo "${line#*|}" | xargs)"; line="${line%%|*}"; fi
-  read -r url range _ <<< "$line" || true
+  IFS='|' read -r head name opts <<< "$line"
+  name="$(echo "${name:-}" | xargs)"
+  read -r url range _ <<< "$head" || true
   [[ -n "${url:-}" ]] || continue
 
   if [[ -z "$name" ]]; then
@@ -46,34 +51,36 @@ for raw in "${lines[@]}"; do
     [[ -n "$name" ]] || name="$(basename "$url")"
   fi
   file="$(sanitize "$name")"
-  [[ -n "${range:-}" ]] && file="$file [${range//:/.}]"
+  # Tag ranged downloads so re-running with a different range fetches again.
+  stored="$file"
+  [[ -n "${range:-}" ]] && stored="$file [${range//:/.}]"
 
-  if compgen -G "$DL/$(printf '%s' "$file" | sed 's/[][*?]/\\&/g').*" >/dev/null; then
-    echo "have   $file"
+  if compgen -G "$DL/$(printf '%s' "$stored" | sed 's/[][*?]/\\&/g').*" >/dev/null; then
+    echo "have   $stored"
   else
     echo "fetch  $url ${range:-} -> $file"
     section=()
     [[ -n "${range:-}" ]] && section=(--download-sections "*$range" --force-keyframes-at-cuts)
     # Prefer <=480p (plenty for a CRT, and quick to download); fall back to the smallest available.
     # shellcheck disable=SC2086
-    yt-dlp ${YTDLP_ARGS:-} --no-playlist --no-warnings \
+    if ! yt-dlp ${YTDLP_ARGS:-} --no-playlist --no-warnings --quiet --progress \
       -f "bv*[height<=480]+ba/b[height<=480]/wv*+ba/w" -S "res:480" \
       --merge-output-format mkv "${section[@]}" \
-      -o "$DL/$file.%(ext)s" "$url"
+      -o "$DL/$stored.%(ext)s" "$url"; then
+      failed+=("$url"); continue
+    fi
   fi
-  fetched+=("$(ls "$DL/$file".* | head -1)")
+
+  src="$(ls "$DL/$stored".* | grep -v '\.part$' | head -1)"
+  ln -sf "$src" "$staging/$file.${src##*.}"
+  # shellcheck disable=SC2086
+  "$ROOT/tools/prepare_clips.sh" ${opts:-} "$staging/$file.${src##*.}" > "$staging/log" 2>&1 \
+    && { grep -v '^\(done\|now\)' "$staging/log" || true; } \
+    || { cat "$staging/log" >&2; failed+=("$url (conversion)"); }
 done
 
-[[ ${#fetched[@]} -gt 0 ]] || { echo "nothing to fetch"; exit 0; }
-# Ranged files carry a "[1.05-2.30]" tag so two sections of one video don't collide;
-# hand them to the converter under the clean name.
-staging="$(mktemp -d)"
-trap 'rm -rf "$staging"' EXIT
-for f in "${fetched[@]}"; do
-  base="$(basename "$f")"
-  clean="$(echo "${base%.*}" | sed 's/ \[[0-9.]*-[0-9.]*\]$//')"
-  n=1; target="$staging/$clean.${base##*.}"
-  while [[ -e "$target" ]]; do n=$((n + 1)); target="$staging/$clean $n.${base##*.}"; done
-  ln -s "$f" "$target"
-done
-"$ROOT/tools/prepare_clips.sh" "$staging"/*
+count=$(find "$ROOT/app/src/main/assets/clips" -maxdepth 1 -name '*.mp4' | wc -l)
+echo "done: $count clips, $(du -sh "$ROOT/app/src/main/assets/clips" | cut -f1) in app/src/main/assets/clips"
+if [[ ${#failed[@]} -gt 0 ]]; then
+  echo "FAILED:" >&2; printf '  %s\n' "${failed[@]}" >&2; exit 1
+fi

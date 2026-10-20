@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Converts any pile of video files into CRT-ready clips inside the APK's assets.
 #
-#   tools/prepare_clips.sh [--letterbox] [--no-autocrop] [--max-seconds N] <input dir or files...>
+#   tools/prepare_clips.sh [--letterbox] [--no-autocrop] [--mask-bars PCT] [--max-seconds N] <input dir or files...>
 #
 # Every clip becomes 640x480 (4:3) H.264 + AAC with loudness evened out, so the shuffle
 # doesn't jump from whisper-quiet to blaring. Widescreen sources are center-cropped to fill
 # the tube; pass --letterbox to keep the full width with black bars instead.
 # Black bars baked into the source (a 4:3 show pillarboxed in a 16:9 upload, a scope film
 # letterboxed) are detected and trimmed first; --no-autocrop turns that off.
+# --mask-bars PCT paints the top and bottom PCT% of the source solid black (to hide channel logos
+# sitting in a baked-in letterbox) and turns autocrop off; pair it with --letterbox to keep it uncropped.
 # New files also get a row in clips.csv (title/year guessed from the filename) for you to finish.
 set -euo pipefail
 
@@ -17,6 +19,7 @@ CSV="$OUT/clips.csv"
 MODE=crop
 MAX_SECONDS=""
 AUTOCROP=1
+MASK=""
 
 inputs=()
 while [[ $# -gt 0 ]]; do
@@ -24,11 +27,12 @@ while [[ $# -gt 0 ]]; do
     --letterbox) MODE=letterbox; shift ;;
     --max-seconds) MAX_SECONDS="$2"; shift 2 ;;
     --no-autocrop) AUTOCROP=0; shift ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --mask-bars) MASK="$2"; AUTOCROP=0; shift 2 ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) inputs+=("$1"); shift ;;
   esac
 done
-[[ ${#inputs[@]} -gt 0 ]] || { echo "usage: $0 [--letterbox] [--no-autocrop] [--max-seconds N] <dir or files...>" >&2; exit 1; }
+[[ ${#inputs[@]} -gt 0 ]] || { echo "usage: $0 [--letterbox] [--no-autocrop] [--mask-bars PCT] [--max-seconds N] <dir or files...>" >&2; exit 1; }
 command -v ffmpeg >/dev/null || { echo "ffmpeg is required" >&2; exit 1; }
 
 mkdir -p "$OUT"
@@ -41,6 +45,9 @@ else
   VF="scale='trunc(iw*sar)':ih,setsar=1,scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2"
 fi
 VF="$VF,setsar=1,fps=30000/1001,format=yuv420p"
+if [[ -n "$MASK" ]]; then
+  VF="drawbox=x=0:y=0:w=iw:h=ceil(ih*$MASK/100):color=black:t=fill,drawbox=x=0:y=ih-ceil(ih*$MASK/100):w=iw:h=ceil(ih*$MASK/100):color=black:t=fill,$VF"
+fi
 
 # Prints "crop=w:h:x:y," when the source has black bars worth trimming, else nothing.
 # cropdetect with reset=0 keeps the widest picture seen across the clip, so dark scenes don't over-crop.
