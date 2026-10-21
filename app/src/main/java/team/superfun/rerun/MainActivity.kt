@@ -90,7 +90,7 @@ class MainActivity : Activity() {
         }
 
         clips = ClipLibrary.load(assets)
-        shuffle = if (clips.isNotEmpty()) ShuffleBag(clips.size) else null
+        shuffle = if (clips.isNotEmpty()) ShuffleBag(clips.map { it.movie }) else null
     }
 
     override fun onStart() {

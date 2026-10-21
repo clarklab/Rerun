@@ -10,6 +10,9 @@ data class Clip(
     val year: String = "",
     val studio: String = "",
 ) {
+    /** Which movie the clip is from, so the shuffle can keep two clips of one movie apart. */
+    val movie: String get() = "${title.trim().lowercase()}|$year"
+
     /** Up to three lines for the bottom-left card: title / director / year + studio. */
     fun infoLines(): List<String> {
         val yearStudio = listOf(year, studio).filter { it.isNotBlank() }.joinToString("  ")

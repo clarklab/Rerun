@@ -36,11 +36,11 @@ If YouTube asks you to sign in, run `YTDLP_ARGS="--cookies-from-browser chrome" 
 - **Info card** shows during the first and last 8 seconds of each clip, to avoid burning text into the tube.
   Set `INFO_ALWAYS_ON` in `Config.kt` if you want it up the whole time.
 - **Size budget:** keep `assets/clips` under ~1.5–1.8 GB, because the onn. stick has 8 GB. Clips come out at
-  ~10–12 MB per minute.
+  ~2 MB per minute (H.265 + HE-AAC).
 
 ## Files
 - `tools/links.txt`: clip list (`URL [START-END] | File Name | converter options`)
 - `app/src/main/assets/clips/clips.csv`: card text per file (title, director, year, studio)
 - `tools/fetch_clips.sh`: yt-dlp download, then conversion
-- `tools/prepare_clips.sh`: any video to a 640x480 H.264 clip (autocrop, `--letterbox`, `--mask-bars`)
+- `tools/prepare_clips.sh`: any video to a small 640x480 H.265 clip (autocrop, `--letterbox`, `--mask-bars`)
 - `app/src/main/java/team/superfun/rerun/Config.kt`: timing, text size, overscan margins

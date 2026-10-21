@@ -34,7 +34,7 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
    ```sh
    tools/prepare_clips.sh ~/Downloads/my-clips/
    ```
-   Each file becomes a 640×480 H.264 MP4 in `app/src/main/assets/clips/`, with the audio level
+   Each file becomes a small 640×480 H.265 MP4 in `app/src/main/assets/clips/`, with the audio level
    evened out. Widescreen sources are center-cropped to fill the 4:3 tube. Use `--letterbox`
    to keep the full width with black bars instead, and `--max-seconds 90` to trim long clips.
 3. Fill in `app/src/main/assets/clips/clips.csv`. The script has already added a row for each new clip:
@@ -88,7 +88,7 @@ Clips are kept out of git on purpose (`.gitignore`), because GitHub can't store 
 ### Size budget
 The onn. 4K stick has about 8 GB of storage. Installing needs room for the APK and an installed
 copy of it, so **keep the clips folder under ~1.5–1.8 GB**. At the script's settings, a clip runs
-about 10–12 MB per minute, which gives you roughly 100 clips of about 1.5 minutes each.
+about 2 MB per minute (H.265 + HE-AAC), so the budget holds several hours of clips.
 `prepare_clips.sh` prints the folder's total size when it finishes.
 
 ## Building

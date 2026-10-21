@@ -3,7 +3,7 @@
 #
 #   tools/prepare_clips.sh [--letterbox] [--no-autocrop] [--mask-bars PCT] [--max-seconds N] <input dir or files...>
 #
-# Every clip becomes 640x480 (4:3) H.264 + AAC with loudness evened out, so the shuffle
+# Every clip becomes a small 640x480 (4:3) H.265 + HE-AAC file with loudness evened out, so the shuffle
 # doesn't jump from whisper-quiet to blaring. Widescreen sources are center-cropped to fill
 # the tube; pass --letterbox to keep the full width with black bars instead.
 # Black bars baked into the source (a 4:3 show pillarboxed in a 16:9 upload, a scope film
@@ -34,6 +34,20 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#inputs[@]} -gt 0 ]] || { echo "usage: $0 [--letterbox] [--no-autocrop] [--mask-bars PCT] [--max-seconds N] <dir or files...>" >&2; exit 1; }
 command -v ffmpeg >/dev/null || { echo "ffmpeg is required" >&2; exit 1; }
+
+# Small files: H.265 (the onn stick decodes it in hardware) at about 2 MB a minute, and HE-AAC audio
+# (macOS's AudioToolbox encoder). Without those encoders, fall back to H.264 and plain AAC.
+encoders="$(ffmpeg -hide_banner -encoders 2>/dev/null)"
+if grep -q libx265 <<< "$encoders"; then
+  VIDEO=(-c:v libx265 -preset slow -crf 30 -tag:v hvc1 -x265-params "log-level=error:keyint=120:min-keyint=30:aq-mode=3")
+else
+  VIDEO=(-c:v libx264 -profile:v main -preset slow -crf 26 -g 120)
+fi
+if grep -q aac_at <<< "$encoders"; then
+  AUDIO=(-c:a aac_at -profile:a 4 -b:a 48k)
+else
+  AUDIO=(-c:a aac -b:a 96k)
+fi
 
 mkdir -p "$OUT"
 [[ -f "$CSV" ]] || echo "file,title,director,year,studio" > "$CSV"
@@ -93,8 +107,7 @@ for src in "${files[@]}"; do
   ffmpeg -nostdin -hide_banner -loglevel error -y -i "$src" ${limit[@]+"${limit[@]}"} \
     -map 0:v:0 -map 0:a:0? -sn -dn \
     -vf "$bars$VF" \
-    -c:v libx264 -profile:v main -level 3.1 -preset slow -crf 24 -maxrate 1500k -bufsize 3000k \
-    -g 60 -c:a aac -b:a 128k -ac 2 -ar 48000 -af "loudnorm=I=-16:TP=-1.5:LRA=11" \
+    "${VIDEO[@]}" "${AUDIO[@]}" -ac 2 -ar 48000 -af "loudnorm=I=-16:TP=-1.5:LRA=11" \
     -movflags +faststart "$dest.tmp.mp4"
   mv "$dest.tmp.mp4" "$dest"
 
