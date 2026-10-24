@@ -13,3 +13,4 @@ app/src/main/assets/clips/*.mkv
 app/src/main/assets/clips/*.webm
 # yt-dlp downloads (originals before conversion)
 tools/downloads/
+.kotlin/
