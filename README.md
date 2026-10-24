@@ -42,7 +42,7 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
    to keep the full width with black bars instead, and `--max-seconds 90` to trim long clips.
 3. Fill in `app/src/main/assets/clips/clips.csv`. The script has already added a row for each new clip:
    ```csv
-   file,title,director,year,studio
+   file,title,director,year,studio,movie
    Back to the Future (1985).mp4,Back to the Future,Robert Zemeckis,1985,Universal Pictures
    "Crouching Tiger (2000).mp4","Crouching Tiger, Hidden Dragon",Ang Lee,2000,Sony Pictures Classics
    Cheers S05E03.mp4,Cheers,"S5 E3 - Abby",1986,NBC
@@ -50,6 +50,12 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
    For TV clips, put the episode in the director column and the network in the studio column.
    For films, the studio column is the label it was released under in US theaters, named as it was
    credited at the time (e.g. MGM/UA Entertainment Co. for Poltergeist).
+   A music video from a film's soundtrack is filed under that film like any other clip: its title is
+   "Band - Song", the director, year and studio are the film's, and an extra `movie` column names the film,
+   so it shares the film's guide channel and the shuffle keeps it apart from the film's clips:
+   ```csv
+   Pet Sematary (1989) Ramones.mp4,Ramones - Pet Sematary,Mary Lambert,1989,Paramount Pictures,Pet Sematary
+   ```
    Empty cells are skipped. A clip with no row gets its title and year from the filename.
 
 ### From YouTube links

@@ -52,3 +52,9 @@ https://www.youtube.com/watch?v=7CzLdg0PpLI             | Killer Klowns from Out
 https://www.youtube.com/watch?v=avJBskW1o9Q             | RoboCop (1987) Boardroom
 https://www.youtube.com/watch?v=Se4jYZTZAhk             | RoboCop (1987) Alley
 https://www.youtube.com/watch?v=9-qtosM3oOI             | RoboCop (1987) Buy That for a Dollar
+# Music videos: the card's title is "Band - Song", the movie column files them under their film.
+https://www.youtube.com/watch?v=noLPhZvcBpw             | A Nightmare on Elm Street 3 (1987) Dokken
+https://www.youtube.com/watch?v=HJWFsZ_YUc4             | Pet Sematary (1989) Ramones
+https://www.youtube.com/watch?v=jpoYR0dX2BI             | Friday the 13th Part VI (1986) Alice Cooper
+https://www.youtube.com/watch?v=5zj6duY5i5A             | Fright Night (1985) The J. Geils Band
+https://www.youtube.com/watch?v=1M4FG1UXH5w             | Hellraiser III (1992) Motorhead

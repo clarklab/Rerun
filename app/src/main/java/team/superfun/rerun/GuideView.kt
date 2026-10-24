@@ -214,8 +214,10 @@ class GuideView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         fun channelsFor(clips: List<Clip>): List<Channel> {
             fun sortKey(title: String) = title.lowercase().removePrefix("the ").removePrefix("a ").removePrefix("an ")
             return clips.indices.groupBy { clips[it].movie }.values
-                .sortedBy { sortKey(clips[it.first()].title) + clips[it.first()].year }
-                .mapIndexed { i, members -> Channel(i + 2, clips[members.first()].title, clips[members.first()].year, members) }
+                .sortedWith(compareBy({ sortKey(clips[it.first()].channelTitle) }, { clips[it.first()].year }))
+                .mapIndexed { i, members ->
+                    Channel(i + 2, clips[members.first()].channelTitle, clips[members.first()].year, members)
+                }
         }
     }
 }

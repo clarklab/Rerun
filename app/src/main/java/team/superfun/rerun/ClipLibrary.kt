@@ -9,9 +9,14 @@ data class Clip(
     val director: String = "",
     val year: String = "",
     val studio: String = "",
+    /** The film a clip belongs to when its title is something else, like a music video's band and song. */
+    val movieTitle: String = "",
 ) {
+    /** The film's name, for its channel in the guide. */
+    val channelTitle: String get() = movieTitle.ifBlank { title }
+
     /** Which movie the clip is from, so the shuffle can keep two clips of one movie apart. */
-    val movie: String get() = "${title.trim().lowercase()}|$year"
+    val movie: String get() = "${channelTitle.trim().lowercase()}|$year"
 
     /** Up to three lines for the bottom-left card: title / director / year + studio. */
     fun infoLines(): List<String> {
@@ -51,6 +56,7 @@ object ClipLibrary {
         val iDirector = col("director")
         val iYear = col("year")
         val iStudio = col("studio")
+        val iMovie = col("movie")
         fun List<String>.at(i: Int) = if (i in indices) this[i].trim() else ""
 
         return rows.drop(1)
@@ -63,6 +69,7 @@ object ClipLibrary {
                     director = row.at(iDirector),
                     year = row.at(iYear),
                     studio = row.at(iStudio),
+                    movieTitle = row.at(iMovie),
                 )
             }
     }
