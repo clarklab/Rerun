@@ -39,6 +39,7 @@ class MainActivity : Activity() {
     private lateinit var badge: TextView
     private lateinit var info: TextView
     private lateinit var message: TextView
+    private lateinit var guide: GuideView
 
     private var clips: List<Clip> = emptyList()
     private var shuffle: ShuffleBag? = null
@@ -51,12 +52,17 @@ class MainActivity : Activity() {
     private var badgeText = ""
     private var badgeUntil = 0L
     private var infoUntil = 0L
-    private var exitArmedUntil = 0L
+    private var guideCloseAt = 0L
+    private var tuneBadge: String? = null
     private var runtimeRetries = 0
 
     private val tick = object : Runnable {
         override fun run() {
             updateOsd()
+            if (guideOpen) {
+                // Close an idle guide, so its text doesn't burn into the tube.
+                if (SystemClock.uptimeMillis() > guideCloseAt) closeGuide() else guide.invalidate()
+            }
             handler.postDelayed(this, 250)
         }
     }
@@ -71,6 +77,7 @@ class MainActivity : Activity() {
         badge = findViewById(R.id.badge)
         info = findViewById(R.id.info)
         message = findViewById(R.id.message)
+        guide = findViewById(R.id.guide)
 
         val vcr = Typeface.createFromAsset(assets, "fonts/vcr_osd_mono.ttf")
         for (tv in listOf(badge, info, message)) {
@@ -80,6 +87,7 @@ class MainActivity : Activity() {
             tv.setShadowLayer(1f, 3f, 3f, 0xCC000000.toInt())
             tv.includeFontPadding = false
         }
+        guide.typeface = vcr
 
         val prefs = getPreferences(MODE_PRIVATE)
         framing = Framing.entries.getOrElse(prefs.getInt(PREF_FRAMING, 0)) { Framing.FULL }
@@ -91,6 +99,7 @@ class MainActivity : Activity() {
 
         clips = ClipLibrary.load(assets)
         shuffle = if (clips.isNotEmpty()) ShuffleBag(clips.map { it.movie }) else null
+        guide.channels = GuideView.channelsFor(clips)
     }
 
     override fun onStart() {
@@ -106,6 +115,7 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         handler.removeCallbacks(tick)
+        closeGuide()
         player?.release()
         player = null
         playerView.player = null
@@ -224,7 +234,8 @@ class MainActivity : Activity() {
     private fun onClipStarted() {
         val index = player?.currentMediaItem?.mediaId?.toIntOrNull() ?: return
         info.text = clips[index].infoLines().joinToString("\n")
-        flashBadge("PLAY ►", Config.PLAY_BADGE_MS)
+        flashBadge(tuneBadge ?: "PLAY ►", Config.PLAY_BADGE_MS)
+        tuneBadge = null
         infoUntil = 0L
         updateOsd()
     }
@@ -257,6 +268,7 @@ class MainActivity : Activity() {
     // ---- Remote ----
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (guideOpen) return onGuideKey(keyCode, event)
         val firstPress = event.repeatCount == 0
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_NEXT,
@@ -278,14 +290,7 @@ class MainActivity : Activity() {
                 if (firstPress) togglePause()
             }
             KeyEvent.KEYCODE_INFO -> showInfoFor(Config.INFO_ON_KEYPRESS_MS)
-            KeyEvent.KEYCODE_BACK -> {
-                // Guard against a stray press ending the show: back has to be pressed twice.
-                val now = SystemClock.uptimeMillis()
-                if (now < exitArmedUntil) finish() else {
-                    exitArmedUntil = now + 2_500L
-                    flashBadge("BACK AGAIN = EXIT", 2_500L)
-                }
-            }
+            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_GUIDE -> if (firstPress) openGuide()
             else -> return super.onKeyDown(keyCode, event)
         }
         return true
@@ -305,6 +310,71 @@ class MainActivity : Activity() {
             return true
         }
         return super.onKeyUp(keyCode, event)
+    }
+
+    // ---- Cable guide ----
+
+    private val guideOpen get() = guide.visibility == View.VISIBLE
+
+    private fun openGuide() {
+        if (player == null || guide.channels.isEmpty()) return
+        val playing = player?.currentMediaItem?.mediaId?.toIntOrNull()
+        guide.select(guide.channels.indexOfFirst { playing in it.clips }.coerceAtLeast(0))
+        guide.visibility = View.VISIBLE
+        guideCloseAt = SystemClock.uptimeMillis() + Config.GUIDE_IDLE_MS
+        placePlayer()
+        updateOsd()
+    }
+
+    private fun closeGuide() {
+        if (!guideOpen) return
+        guide.visibility = View.GONE
+        placePlayer()
+        updateOsd()
+    }
+
+    /** Full stage normally; the guide's picture window while the guide is up. */
+    private fun placePlayer() {
+        val lp = if (guideOpen) {
+            val r = guide.videoWindow(stage.width, stage.height)
+            FrameLayout.LayoutParams(r.width(), r.height()).apply { leftMargin = r.left; topMargin = r.top }
+        } else {
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        }
+        playerView.layoutParams = lp
+    }
+
+    private fun onGuideKey(keyCode: Int, event: KeyEvent): Boolean {
+        guideCloseAt = SystemClock.uptimeMillis() + Config.GUIDE_IDLE_MS
+        val firstPress = event.repeatCount == 0
+        when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> guide.move(-1)
+            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> guide.move(+1)
+            KeyEvent.KEYCODE_DPAD_LEFT -> guide.move(-guide.pageSize)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> guide.move(guide.pageSize)
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                if (firstPress) tune(guide.channels[guide.selected])
+            }
+            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_GUIDE -> if (firstPress) closeGuide()
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                if (firstPress) togglePause()
+            }
+            else -> return super.onKeyDown(keyCode, event)
+        }
+        return true
+    }
+
+    /** Plays every clip of the channel's movie in shuffled order, then goes back to the full shuffle. */
+    private fun tune(channel: Channel) {
+        val exo = player ?: return
+        val bag = shuffle ?: return
+        val block = channel.clips.shuffled()
+        bag.continueAfter(block.last())
+        tuneBadge = "CH %02d".format(channel.number)
+        exo.setMediaItems((block + bag.nextRound()).map(::mediaItemFor))
+        exo.prepare()
+        exo.play()
+        closeGuide()
     }
 
     /** Up/Down turn the tape worse or better, one click at a time; 0 is a clean picture. */
@@ -337,6 +407,7 @@ class MainActivity : Activity() {
         stage.layoutParams = (stage.layoutParams as FrameLayout.LayoutParams).apply {
             width = sw; height = sh
         }
+        if (guideOpen) stage.post { placePlayer() }
         val padX = (sw * Config.SAFE_MARGIN_X).toInt()
         val padY = (sh * Config.SAFE_MARGIN_Y).toInt()
         for (tv in listOf(badge, info, message)) {
@@ -374,6 +445,11 @@ class MainActivity : Activity() {
         val exo = player
 
         val paused = exo != null && !exo.playWhenReady
+        if (guideOpen) {
+            badge.visibility = View.INVISIBLE
+            info.visibility = View.INVISIBLE
+            return
+        }
         when {
             now < badgeUntil -> { badge.text = badgeText; badge.visibility = View.VISIBLE }
             paused -> { badge.text = "PAUSE ||"; badge.visibility = View.VISIBLE }

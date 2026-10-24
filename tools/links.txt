@@ -44,3 +44,9 @@ https://www.youtube.com/watch?v=DCg6PEZ8kMo             | Poltergeist (1982) The
 https://www.youtube.com/watch?v=M2o2FRwn_hg  0:00-5:41  | The Thing (1982) Blood Test
 # Age-restricted on YouTube: fetch with YTDLP_ARGS="--cookies-from-browser chrome".
 https://www.youtube.com/watch?v=GHyvfOUEK4o  0:00-2:36  | An American Werewolf in London (1981) Transformation
+https://www.youtube.com/watch?v=iuhbW8LTcMM             | Killer Klowns from Outer Space (1988) Pizza
+https://www.youtube.com/watch?v=hRAHIliFfzI  0:00-5:16  | Killer Klowns from Outer Space (1988) Giant
+# Windowboxed (bars on all four sides); autocrop trims them.
+https://www.youtube.com/watch?v=ZXKDTjOLPyw             | Killer Klowns from Outer Space (1988) Scene Pack
+https://www.youtube.com/watch?v=YXJn2a3pXLQ             | Killer Klowns from Outer Space (1988) Scene
+https://www.youtube.com/watch?v=7CzLdg0PpLI             | Killer Klowns from Outer Space (1988) The Dickies

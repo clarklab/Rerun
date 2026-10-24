@@ -14,6 +14,8 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
   Level 1 looks like a decent SP tape. Each click goes softer, smearier and noisier, then tracking bars come in
   and grow, the picture starts to bounce, and level 10 rolls. It's a live GPU port of
   [ntsc-rs](https://github.com/valadaptive/ntsc-rs)'s NTSC/VHS signal model (`VhsEffect.kt`), so it works on any clip.
+- A late-80s cable guide on **Back**, with the live picture in a window and one channel per movie.
+- The shuffle never plays two clips from the same movie back to back.
 - Skips a broken clip and moves on. Shows a blue `NO TAPE` screen when there are no clips.
 
 ## Remote
@@ -25,7 +27,8 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
 | **OK** / Play-Pause | Pause or resume (also shows the info card) |
 | **Hold OK** | Change framing: *Full screen* or *Center 4:3* (remembered between runs) |
 | **Up** / **Down** | Make the VHS tracking worse / better, in 10 clicks (remembered between runs). Hold **Down** to get a clean picture back (*AUTO TRACKING*) |
-| **Back** ×2 | Exit (one stray press won't stop the show) |
+| **Back** | Open the cable guide: one channel per movie. **Up/Down** pick, **Left/Right** page, **OK** plays all of that movie's clips in shuffled order, then back to the full shuffle. **Back** closes it (it also closes itself after 30 s) |
+| **Home** | Leave Rerun |
 
 ## Adding clips
 
@@ -152,7 +155,8 @@ app/src/main/
   java/team/superfun/rerun/
     MainActivity.kt        player, remote, on-screen display
     ClipLibrary.kt         finds clips, reads clips.csv
-    ShuffleBag.kt          no-repeat shuffle
+    ShuffleBag.kt          no-repeat shuffle that keeps one movie's clips apart
+    GuideView.kt           the cable guide
     VhsEffect.kt           bad-tape effect (Up/Down), a GPU port of ntsc-rs
     BootReceiver.kt        auto-start on power-up
     Config.kt              tweakables

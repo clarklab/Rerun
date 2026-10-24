@@ -43,6 +43,9 @@ object Config {
      */
     const val TEXT_SCALE_X = 1.0f
 
+    /** The cable guide closes itself after this long without a button press, so it can't burn into the tube. */
+    const val GUIDE_IDLE_MS = 30_000L
+
     /** Clicks of bad tracking on Up/Down, from a clean picture to a chewed-up tape. */
     const val TRACKING_STEPS = 10
 }

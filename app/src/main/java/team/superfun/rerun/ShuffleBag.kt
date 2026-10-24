@@ -18,6 +18,11 @@ class ShuffleBag(private val movies: List<Any>, private val random: Random = Ran
 
     val playableCount: Int get() = movies.size - skipped.size
 
+    /** The next round won't start with [index]'s movie (used after the guide plays a movie's clips). */
+    fun continueAfter(index: Int) {
+        last = index
+    }
+
     fun nextRound(): List<Int> {
         // Remaining clips per movie, each list in random order.
         val left = movies.indices.filterNot { it in skipped }.shuffled(random).groupBy { movies[it] }

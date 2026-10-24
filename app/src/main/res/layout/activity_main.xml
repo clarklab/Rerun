@@ -25,6 +25,13 @@
             app:surface_type="surface_view"
             app:use_controller="false" />
 
+        <!-- The cable guide (Back). The player moves into its picture window while it's open. -->
+        <team.superfun.rerun.GuideView
+            android:id="@+id/guide"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/badge"
             android:layout_width="wrap_content"
