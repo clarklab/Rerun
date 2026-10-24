@@ -48,6 +48,8 @@ movie and TV clips forever, like a music video channel, with VCR-style on-screen
    Cheers S05E03.mp4,Cheers,"S5 E3 - Abby",1986,NBC
    ```
    For TV clips, put the episode in the director column and the network in the studio column.
+   For films, the studio column is the label it was released under in US theaters, named as it was
+   credited at the time (e.g. MGM/UA Entertainment Co. for Poltergeist).
    Empty cells are skipped. A clip with no row gets its title and year from the filename.
 
 ### From YouTube links
